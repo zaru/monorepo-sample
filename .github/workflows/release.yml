@@ -1,0 +1,122 @@
+# 手動トリガー（workflow_dispatch）でのリリースフロー検証用ワークフロー
+# 実際のリリースは行わず、動作確認用のダミー処理のみを実行する
+name: Release (manual)
+
+on:
+  workflow_dispatch:
+    # 手動実行時に GitHub の UI から入力できるパラメータ
+    inputs:
+      target:
+        description: リリース対象のアプリ
+        type: choice
+        required: true
+        default: all
+        options:
+          - all
+          - app_a
+          - app_b
+      release_type:
+        description: バージョンの上げ方（semver）
+        type: choice
+        required: true
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+      dry_run:
+        description: ドライラン（実際のリリース処理をスキップ）
+        type: boolean
+        required: true
+        default: true
+
+# 同一対象への二重リリースを防ぐ
+concurrency:
+  group: release-${{ github.event.inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 入力値の確認
+        run: |
+          echo "target       = ${{ inputs.target }}"
+          echo "release_type = ${{ inputs.release_type }}"
+          echo "dry_run      = ${{ inputs.dry_run }}"
+          echo "actor        = ${{ github.actor }}"
+          echo "ref          = ${{ github.ref_name }}"
+
+      - name: チェックアウト
+        uses: actions/checkout@v4
+
+      - name: pnpm セットアップ
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.1
+
+      - name: Node.js セットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: 依存関係のインストール
+        run: pnpm install --frozen-lockfile
+
+      - name: ビルド（ダミー）
+        run: |
+          echo "TODO: ここでビルドを実行する（今は動作確認のためスキップ）"
+
+      - name: テスト（ダミー）
+        run: |
+          echo "TODO: ここでテストを実行する（今は動作確認のためスキップ）"
+
+      - name: サーバ起動の疎通確認（app ごとにダミー検証）
+        run: |
+          run_smoke() {
+            app="$1"
+            port="$2"
+            echo "::group::smoke test ($app)"
+            PORT="$port" node "apps/$app/src/server.js" &
+            pid=$!
+            # サーバ起動待ち
+            sleep 1
+            echo "--- curl http://localhost:$port/release-check ---"
+            curl -sf "http://localhost:$port/release-check"
+            echo ""
+            kill "$pid"
+            echo "::endgroup::"
+          }
+
+          case "${{ inputs.target }}" in
+            app_a) run_smoke app_a 3001 ;;
+            app_b) run_smoke app_b 3002 ;;
+            all)
+              run_smoke app_a 3001
+              run_smoke app_b 3002
+              ;;
+          esac
+
+      - name: リリース処理（ダミー）
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "🟡 dry_run=true のため、実際のリリースはスキップします"
+            echo "（${{ inputs.target }} を ${{ inputs.release_type }} で上げる想定）"
+          else
+            echo "🟢 ここで実際のリリース処理を行う（タグ付け / publish など）"
+            echo "対象: ${{ inputs.target }} / 種別: ${{ inputs.release_type }}"
+          fi
+
+      - name: サマリ出力
+        run: |
+          {
+            echo "## リリース検証サマリ"
+            echo ""
+            echo "| 項目 | 値 |"
+            echo "| --- | --- |"
+            echo "| 対象 | ${{ inputs.target }} |"
+            echo "| 種別 | ${{ inputs.release_type }} |"
+            echo "| dry_run | ${{ inputs.dry_run }} |"
+            echo "| 実行者 | ${{ github.actor }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
