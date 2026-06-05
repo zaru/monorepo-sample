@@ -20,15 +20,6 @@ on:
         type: boolean
         required: true
         default: false
-      release_type:
-        description: バージョンの上げ方（semver）
-        type: choice
-        required: true
-        default: patch
-        options:
-          - patch
-          - minor
-          - major
       dry_run:
         description: ドライラン（実際のリリース処理をスキップ）
         type: boolean
@@ -44,7 +35,6 @@ jobs:
     if: ${{ inputs.app_a }}
     uses: ./.github/workflows/release-app_a.yml
     with:
-      release_type: ${{ inputs.release_type }}
       dry_run: ${{ inputs.dry_run }}
 
   # app_b にチェックが入っている場合だけ実行（app_b 専用フローを呼び出す）
@@ -53,5 +43,4 @@ jobs:
     if: ${{ inputs.app_b }}
     uses: ./.github/workflows/release-app_b.yml
     with:
-      release_type: ${{ inputs.release_type }}
       dry_run: ${{ inputs.dry_run }}
