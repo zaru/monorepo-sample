@@ -15,6 +15,11 @@ on:
         type: boolean
         required: true
 
+# app_b への二重リリースを防ぐ（app_b 単位で直列化。app_a とは独立）
+concurrency:
+  group: release-app_b
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
