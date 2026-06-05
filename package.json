@@ -1,0 +1,23 @@
+{
+  "name": "monorepo-sample",
+  "version": "1.0.0",
+  "description": "pnpm workspaces を使った monorepo のサンプル",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:app_a": "pnpm --filter app_a dev",
+    "dev:app_b": "pnpm --filter app_b dev",
+    "start:app_a": "pnpm --filter app_a start",
+    "start:app_b": "pnpm --filter app_b start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.5.1",
+      "onFail": "download"
+    }
+  }
+}
